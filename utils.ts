@@ -21,9 +21,9 @@ function generateTestData(numRecords: number) {
     return testData;
 }
 
-async function insertRecordsInChunks(client: Client, records: Record[]): Promise<{ record: Record; error: Error }[]> {
+export async function insertRecordsInChunks(client: Client, records: Record[]): Promise<{ record: Record; error: any }[]> {
   const chunkSize = 10000;
-  const errors: { record: Record; error: Error }[] = [];
+  const errors: { record: Record; error: any }[] = [];
 
   for (let i = 0; i < records.length; i += chunkSize) {
     const chunk = records.slice(i, i + chunkSize);
@@ -47,6 +47,18 @@ async function insertRecordsInChunks(client: Client, records: Record[]): Promise
 
   return errors;
 }
+
+export async function clearDB(client: Client) {
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM your_table');
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+    
+  }
 
 // Usage example:
 async function main() {
