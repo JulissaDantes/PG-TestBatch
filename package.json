@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest ./database.test.ts",
+    "try-db": "tsc && node utils.js"
   },
   "author": "JulissaDantes",
   "license": "ISC",

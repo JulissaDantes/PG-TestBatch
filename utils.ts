@@ -24,8 +24,9 @@ function generateTestData(numRecords: number) {
 export async function insertRecordsInChunks(client: Client, records: Record[]): Promise<{ record: Record; error: any }[]> {
   const chunkSize = 10000;
   const errors: { record: Record; error: any }[] = [];
-
+  
   for (let i = 0; i < records.length; i += chunkSize) {
+    console.log("about to start at:", i);
     const chunk = records.slice(i, i + chunkSize);
     try {
       await client.query('BEGIN');
@@ -37,8 +38,9 @@ export async function insertRecordsInChunks(client: Client, records: Record[]): 
           record.email,
         ]);
       }
-
+      console.log("Finished chunk #:", records.length/ chunkSize);
       await client.query('COMMIT');
+      console.log("Committed")
     } catch (error) {
       await client.query('ROLLBACK');
       errors.push(...chunk.map((record) => ({ record, error })));
@@ -74,9 +76,8 @@ async function main() {
     await client.connect();
 
     const records = generateTestData(1000000);
-    const errors = await insertRecordsInChunks(client, records);
-
-    console.log('Records that couldn\'t be inserted:', errors);
+    //const errors = await insertRecordsInChunks(client, records);
+    await clearDB(client)
   } catch (error) {
     console.error('Error:', error);
   } finally {
