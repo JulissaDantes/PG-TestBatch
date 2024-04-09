@@ -1,5 +1,6 @@
 TODOs
-[ ] Making it run without tooling
+[X] Making insert run without tooling
+[ ] Making select run without tooling
 [ ] using real table schema and scripts
 [ ] Using knex since we are using that
 
