@@ -1,20 +1,41 @@
 import { Client } from 'pg';
 import { faker } from '@faker-js/faker';
 
-interface Record {
-  name: string;
-  email: string;
-  address: string;
+export enum RequestStatus {
+    PENDING = 0,
+    PROCESSING = 1,
+    COMPLETED = 2,
+    FAILED = 3,
+    READY = 4,
+    REPLACED = 5, // Internal status for now, translates to PENDING externally, see RequestPresentationService
 }
-// TODO use actual DB schema here
+
+interface Record {
+    id?: string
+    status: RequestStatus
+    cid: string
+    streamId: string
+    message: string
+    pinned: boolean
+    createdAt: Date
+    updatedAt: Date
+    timestamp: Date
+    origin?: string
+}
+
 function generateTestData(numRecords: number) {
     const testData = [];
     for (let i = 0; i < numRecords; i++) {
       const record = {
-        name: faker.person.firstName(),
-        email: faker.internet.email(),
-        address: faker.location.direction(),
-        // Add more fields as needed
+        status: faker.number.int({min: 0, max:5}),
+        cid: faker.string.hexadecimal({length: 20}),
+        streamId: faker.string.hexadecimal({length: 20}),
+        message: faker.lorem.lines(2),
+        pinned: faker.datatype.boolean(),
+        createdAt: faker.date.anytime(),
+        updatedAt: faker.date.anytime(),
+        timestamp: faker.date.anytime(),
+        origin: faker.string.sample()
       };
       testData.push(record);
     }
@@ -32,13 +53,19 @@ export async function insertRecordsInChunks(client: Client, records: Record[]): 
       await client.query('BEGIN');
 
       for (const record of chunk) {
-        await client.query('INSERT INTO your_table (name, address, email) VALUES ($1, $2, $3)', [
-          record.name,
-          record.address,
-          record.email,
+        await client.query('INSERT INTO request (status, cid, streamId, message, pinned, createdAt, updatedAt, timestamp, origin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [
+          record.status,
+          record.cid,
+          record.streamId,
+          record.message,
+          record.pinned,
+          record.createdAt,
+          record.updatedAt,
+          record.timestamp,
+          record.origin,
         ]);
       }
-      console.log("Finished chunk #:", Math.floor(((i + 1)/chunkSize) + 1)," of ", records.length/ chunkSize);
+      console.log("Finished inserting chunk #:", Math.floor(((i + 1)/chunkSize) + 1)," of ", records.length/ chunkSize);
       await client.query('COMMIT');
       console.log("Committed")
     } catch (error) {
@@ -61,13 +88,19 @@ export async function insertRecordsInChunks(client: Client, records: Record[]): 
         await client.query('BEGIN');
   
         for (const record of chunk) {
-          res.push(await client.query('Select * from your_table where name = $1 and address= $2 and email = $3', [
-            record.name,
-            record.address,
-            record.email,
+          res.push(await client.query('Select * from request where status = $1 and cid= $2 and streamId = $3 and message = $4 and pinned= $5 and createdAt = $6 and updatedAt = $7 and timestamp= $8 and origin = $9', [
+            record.status,
+            record.cid,
+            record.streamId,
+            record.message,
+            record.pinned,
+            record.createdAt,
+            record.updatedAt,
+            record.timestamp,
+            record.origin,
           ]));
         }
-        console.log("Finished chunk #:", Math.floor(((i + 1)/chunkSize) + 1)," of ", records.length/ chunkSize);
+        console.log("Finished reading chunk #:", Math.floor(((i + 1)/chunkSize) + 1)," of ", records.length/ chunkSize);
         await client.query('COMMIT');
         console.log("Committed")
       } catch (error) {
@@ -105,8 +138,11 @@ async function main() {
     await client.connect();
 
     const records = generateTestData(1000000);
-    const errors = await insertRecordsInChunks(client, records);
-    //const errors = await readRecordsInChunks(client, records);
+    console.log("this was generated", records);
+    console.log("did we had an error", await insertRecordsInChunks(client, records));
+    const res = await readRecordsInChunks(client, records);
+    console.log(res.length, "thats the result amount")
+
     //await clearDB(client)
   } catch (error) {
     console.error('Error:', error);
