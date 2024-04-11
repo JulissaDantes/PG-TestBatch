@@ -19,7 +19,9 @@
     "typescript": "^5.4.4"
   },
   "dependencies": {
+    "@ceramicnetwork/codecs": "^4.5.0",
     "@faker-js/faker": "^8.4.1",
+    "knex": "^3.1.0",
     "pg": "^8.11.5"
   }
 }
